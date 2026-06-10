@@ -38,6 +38,7 @@
       --font-size: 16px;
       --line-height: 1.7;
       --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+      --toc-btn-size: 3rem;
       transition: background 0.25s ease, color 0.2s ease;
     }
 
@@ -408,7 +409,7 @@
       position: relative;
     }
 
-    /* 移动端目录按钮 */
+    /* 移动端目录按钮 - 优化位置避免遮挡文字 */
     .mobile-toc-btn {
       position: fixed;
       right: 1rem;
@@ -416,10 +417,10 @@
       width: 3rem;
       height: 3rem;
       border-radius: 50%;
-      background: var(--primary);
+      background: rgba(79, 110, 247, 0.85);
       color: white;
-      border: none;
-      box-shadow: 0 4px 12px rgba(79,110,247,0.4);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 4px 16px rgba(79,110,247,0.3);
       font-size: 1.3rem;
       display: none;
       align-items: center;
@@ -428,18 +429,23 @@
       z-index: 50;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
-      transition: all 0.2s ease;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
 
     .mobile-toc-btn:active {
       transform: scale(0.9);
-      background: #3b5de7;
+      background: rgba(59, 93, 231, 0.9);
     }
 
+    /* 阅读区域 - 增加右侧内边距防止被按钮遮挡 */
     .reading-area {
       flex: 1;
       overflow-y: auto;
-      padding: 1rem 1rem;
+      padding: 1rem 1.5rem 1rem 1rem;
+      /* 右侧增加额外内边距，在移动端避免被目录按钮遮挡 */
+      padding-right: calc(1.5rem + 50px);
       font-size: 1rem;
       line-height: 1.8;
       word-wrap: break-word;
@@ -634,7 +640,7 @@
     }
 
     /* 响应式设计 */
-    /* 桌面端显示侧边栏 */
+    /* 桌面端 - 恢复默认内边距 */
     @media (min-width: 769px) {
       .sidebar {
         position: relative;
@@ -658,8 +664,10 @@
         display: none !important;
       }
       
+      /* 桌面端恢复正常内边距 */
       .reading-area {
         padding: 2rem 2.5rem;
+        padding-right: 2.5rem;
       }
       
       .btn {
@@ -684,10 +692,15 @@
       
       .mobile-toc-btn {
         display: flex;
+        width: 3.2rem;
+        height: 3.2rem;
+        right: 1.2rem;
+        bottom: 5.5rem;
       }
       
       .reading-area {
         padding: 1.5rem;
+        padding-right: calc(1.5rem + 55px);
         font-size: 1.05rem;
       }
     }
@@ -725,6 +738,7 @@
       
       .reading-area {
         padding: 0.8rem;
+        padding-right: calc(0.8rem + 48px);
         font-size: 0.95rem;
         line-height: 1.7;
       }
@@ -767,6 +781,17 @@
       .theme-text {
         display: none;
       }
+      
+      .mobile-toc-btn {
+        width: 2.5rem;
+        height: 2.5rem;
+        right: 0.5rem;
+        bottom: 4rem;
+      }
+      
+      .reading-area {
+        padding-right: calc(0.8rem + 42px);
+      }
     }
 
     /* 触摸设备优化 */
@@ -776,6 +801,12 @@
       .page-btn:hover,
       .chapter-item:hover {
         transform: none;
+      }
+      
+      /* 移动端滚动时隐藏按钮，停止滚动后显示 */
+      .reading-area.scrolling .mobile-toc-btn {
+        opacity: 0.3;
+        transform: scale(0.9);
       }
     }
   </style>
@@ -844,6 +875,9 @@
           <span style="font-size: 3rem;">📘</span>
           <p>点击上方「打开」选择电子书</p>
           <p style="font-size: 0.8rem; opacity:0.7;">支持 TXT · EPUB · PDF</p>
+          <p style="font-size: 0.75rem; opacity:0.6; margin-top: 0.5rem;">
+            💡 使用键盘 <strong>← →</strong> 方向键翻页
+          </p>
         </div>
       </div>
       <div class="pagination" id="paginationControls">
@@ -900,6 +934,16 @@
       function isMobile() {
         return window.innerWidth <= 768;
       }
+
+      // 滚动时隐藏目录按钮的优化
+      let scrollTimeout;
+      readingArea.addEventListener('scroll', () => {
+        readingArea.classList.add('scrolling');
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+          readingArea.classList.remove('scrolling');
+        }, 1000);
+      });
 
       // 打开侧边栏
       function openSidebar() {
@@ -1039,6 +1083,9 @@
             <span style="font-size: 3rem;">📘</span>
             <p>点击上方「打开」选择电子书</p>
             <p style="font-size: 0.8rem; opacity:0.7;">支持 TXT · EPUB · PDF</p>
+            <p style="font-size: 0.75rem; opacity:0.6; margin-top: 0.5rem;">
+              💡 使用键盘 <strong>← →</strong> 方向键翻页
+            </p>
           </div>
         `;
         
@@ -1406,7 +1453,6 @@
 
       // 键盘快捷键
       document.addEventListener('keydown', (e) => {
-        // 如果正在输入框中，不触发快捷键
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
           return;
         }
